@@ -356,6 +356,7 @@ BERTを用いたテキスト分類をテーマとしたモダンで高品質な�
 - [【実装解説】日本語版BERTでlivedoorニュース分類：Google Colaboratoryで（PyTorch）](https://qiita.com/sugulu_Ogawa_ISID/items/697bd03499c1de9cf082)
 - [Livedoorニュースコーパスを文書分類にすぐ使えるように整形する](https://radiology-nlp.hatenablog.com/entry/2019/11/25/124219)
 - [BERTによる日本語構文解析の精度向上](https://www.anlp.jp/proceedings/annual_meeting/2019/pdf_dir/F2-4.pdf)
+- [研究のためのPython開発環境](https://zenn.dev/zenizeni/books/a64578f98450c2)
 - https://github.com/yoheikikuta/bert-japanese/blob/master/notebook/finetune-to-livedoor-corpus.ipynb
 - https://github.com/sonoisa/t5-japanese/blob/main/t5_japanese_classification.ipynb
 - https://gist.github.com/kanjirz50/1ef6813df7faed3838629a3eea73774b
