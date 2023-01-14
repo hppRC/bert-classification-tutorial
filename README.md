@@ -5,7 +5,7 @@
 
 Googleが2018年に発表した[BERT](https://arxiv.org/abs/1810.04805)は、その性能の高さや利便性から、今やあらゆる自然言語処理タスクで汎用的に用いられるようになっています。
 
-BERTは**事前学習済み言語モデル (Pretrained Language Model)**と呼ばれるモデルの一種で、大量のテキストで事前にモデルの学習をおこなっておくことで、様々なタスクに利用できる言語知識を獲得しています。
+BERTは**事前学習済み言語モデル (Pretrained Language Model)** と呼ばれるモデルの一種で、大量のテキストで事前にモデルの学習をおこなっておくことで、様々なタスクに利用できる言語知識を獲得しています。
 この言語知識を転用することで、多様なタスクについて、今までよりも少ない学習データで非常に高い性能を発揮できることがわかっています。
 
 BERTをテキスト分類などのタスクに適用する際は、BERTを微調整(fine-tuning)することでタスクを解きます。
@@ -25,7 +25,7 @@ BERTは近年では[基盤モデル(Foundation Models)](https://arxiv.org/abs/21
 その代表例が[HuggingFace](https://huggingface.co)が公開している[Transformers](https://github.com/huggingface/transformers)というライブラリです。
 
 Transformersを用いることで、BERTをはじめとする様々な事前学習済みモデルたちを簡単にダウンロード・利用できます。
-TransformersはPyTorchやTensorflow, Jax / Flaxといった様々な深層学習用ライブラリと同時に利用できるので、環境を選ばずに事前学習済みモデルたちにアクセスすることができるようになりました。
+Transformersは[PyTorch](https://pytorch.org/)や[Tensorflow](https://www.tensorflow.org/), [Jax](https://github.com/google/jax)/[Flax](https://github.com/google/flax)といった様々な深層学習用ライブラリと同時に利用できるので、環境を選ばずに事前学習済みモデルたちにアクセスすることができるようになりました。
 
 Transformersの別の良さとしては、事前学習済みモデルのアップロードも簡単であるというのも特筆すべき点です。
 これにより、研究や企業応用など、そのユースケースを問わず、様々なモデルをTransformersを通じて簡単にやりとりすることができるようになりました。
@@ -92,7 +92,7 @@ poetry run python src/train.py
 
 まず、環境構築について説明します。
 
-本実装は**Python 3.10以上**での実行を想定しています。
+本実装は**Python 3.10 以上** での実行を想定しています。
 Python 3.10は、match文の導入やwith文の改善など様々な利便性の向上がなされている他、[Pythonが高速化の計画を進めていること](https://forest.watch.impress.co.jp/docs/news/1451751.html)もあり、早めに新しいPythonに適応しておくことのメリットは大きいと考えたためです。
 
 また、Python 3.10では、Type Hints (型注釈)が以前のバージョンより自然に書けるようになっており、今までよりも堅牢かつ可読性の高いコードを書きやすくなっています。
@@ -131,7 +131,7 @@ Minicondaを用いる環境構築では、通常さまざまなパッケージ�
 ```bash
 conda create -n bert-classification-tutorial python=3.10
 
-// https://pytorch.org/get-started/locally/
+// see: https://pytorch.org/get-started/locally/
 conda install pytorch pytorch-cuda=11.6 -c pytorch -c nvidia
 
 pip install tqdm "transformers[ja,sentencepiece]" classopt tokenizers numpy pandas more-itertools scikit-learn scipy
