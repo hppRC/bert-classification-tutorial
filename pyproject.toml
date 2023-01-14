@@ -1,0 +1,25 @@
+[tool.poetry]
+name = "bert-classification-tutorial"
+version = "0.1.0"
+description = ""
+authors = ["hppRC <hpp.ricecake@gmail.com>"]
+readme = "README.md"
+packages = [{ include = "src" }]
+
+[tool.poetry.dependencies]
+python = "3.10.x"
+torch = { url = "https://download.pytorch.org/whl/cu116/torch-1.13.0%2Bcu116-cp310-cp310-linux_x86_64.whl" }
+tqdm = "^4.64.1"
+transformers = { extras = ["ja", "sentencepiece"], version = "^4.25.1" }
+classopt = "^0.2.1"
+tokenizers = "^0.13.2"
+numpy = "^1.24.1"
+pandas = "^1.5.2"
+more-itertools = "^9.0.0"
+scikit-learn = "^1.2.0"
+scipy = "^1.10.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
