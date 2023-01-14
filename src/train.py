@@ -62,9 +62,9 @@ def main(args: Args):
         .to(args.device, non_blocking=True)
     )
 
-    train_dataset = load_dataset(args.dataset_dir / "train.jsonl")
-    val_dataset = load_dataset(args.dataset_dir / "val.jsonl")
-    test_dataset = load_dataset(args.dataset_dir / "test.jsonl")
+    train_dataset: list[dict] = load_dataset(args.dataset_dir / "train.jsonl")
+    val_dataset: list[dict] = load_dataset(args.dataset_dir / "val.jsonl")
+    test_dataset: list[dict] = load_dataset(args.dataset_dir / "test.jsonl")
 
     def collate_fn(data_list: list[dict]) -> BatchEncoding:
         title = [d["title"] for d in data_list]
@@ -92,9 +92,9 @@ def main(args: Args):
             pin_memory=True,
         )
 
-    train_dataloader = create_loader(train_dataset, shuffle=True)
-    val_dataloader = create_loader(val_dataset, shuffle=False)
-    test_dataloader = create_loader(test_dataset, shuffle=False)
+    train_dataloader: DataLoader = create_loader(train_dataset, shuffle=True)
+    val_dataloader: DataLoader = create_loader(val_dataset, shuffle=False)
+    test_dataloader: DataLoader = create_loader(test_dataset, shuffle=False)
 
     optimizer = torch.optim.AdamW(params=model.parameters(), lr=args.lr)
 
