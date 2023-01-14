@@ -277,6 +277,16 @@ outputs/bert-base-multilingual-cased
 ぜひご利用ください。
 
 
+また、環境変数として以下の値を設定しておくと、warningsやメッセージが煩わしくなくて便利です(warningを消す設定が含まれるので、自己責任でお願いします)。
+
+```bash:.envrc
+export TF_CPP_MIN_LOG_LEVEL="2"
+export TOKENIZERS_PARALLELISM="false"
+export TRANSFORMERS_VERBOSITY="error"
+export DATASETS_VERBOSITY="error"
+export PYTHONPATH="$PWD:$PYTHONPATH"
+```
+
 ## 評価実験
 
 最後に、本実装によって、livedoorニュースコーパスの9値分類を行う評価実験を実施したので、その実験について述べます。
