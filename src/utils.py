@@ -1,14 +1,15 @@
 import json
 import random
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any
 
 import numpy as np
 import pandas as pd
 import torch
 
 
-def save_jsonl(data: Iterable | pd.DataFrame, path: Path | str) -> None:
+def save_jsonl(data: pd.DataFrame | Iterable[dict] | dict[Any, Iterable], path: Path | str) -> None:
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
 
