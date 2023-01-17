@@ -140,7 +140,22 @@ conda install pytorch pytorch-cuda=11.6 -c pytorch -c nvidia
 pip install tqdm "transformers[ja,sentencepiece]" classopt tokenizers numpy pandas more-itertools scikit-learn scipy
 ```
 
+### 補足
+
 以降はPoetryを用いて環境構築をした場合のコマンドを紹介しますが、minicondaを用いて環境構築をした場合は、`poetry run python`と書いてある部分を`python`に読み替えてください。
+
+環境変数として以下の値を設定しておくと、warningsやメッセージが煩わしくなくて便利です(警告メッセージを消す設定が含まれるので、自己責任でお願いします)。
+
+```sh:.envrc
+export TF_CPP_MIN_LOG_LEVEL="2"
+export TOKENIZERS_PARALLELISM="false"
+export TRANSFORMERS_VERBOSITY="error"
+export DATASETS_VERBOSITY="error"
+export PYTHONPATH="$PWD:$PYTHONPATH"
+```
+
+特に、`PYTHONPATH`の設定は、`conda`で仮想環境を作成した場合は必要になります。
+Pythonにおける自作モジュールのimportのため、[direnv](https://github.com/direnv/direnv)などのツールを用いて`.envrc`に記述されている環境変数の設定、または上述の`PYTHONPATH`設定をお願いします。
 
 
 ## データセット作成
@@ -283,15 +298,6 @@ outputs/bert-base-multilingual-cased
 
 また、`src/aggregate.py`を実行することで、`outputs`ディレクトリ以下の結果を単一のcsvファイルにまとめることができます。このスクリプトは適宜改造してお使いください。
 
-環境変数として以下の値を設定しておくと、warningsやメッセージが煩わしくなくて便利です(警告メッセージを消す設定が含まれるので、自己責任でお願いします)。
-
-```sh:.envrc
-export TF_CPP_MIN_LOG_LEVEL="2"
-export TOKENIZERS_PARALLELISM="false"
-export TRANSFORMERS_VERBOSITY="error"
-export DATASETS_VERBOSITY="error"
-export PYTHONPATH="$PWD:$PYTHONPATH"
-```
 
 ## 評価実験
 

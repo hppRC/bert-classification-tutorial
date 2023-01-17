@@ -74,7 +74,7 @@ def main(args: Args):
             title,
             body,
             padding=True,
-            truncation=True,
+            truncation="only_second",
             return_tensors="pt",
             max_length=args.max_seq_len,
         )
