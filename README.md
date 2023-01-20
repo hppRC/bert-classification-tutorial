@@ -311,7 +311,7 @@ outputs/bert-base-multilingual-cased
 
 では、結果の表を以下に示します。
 baseサイズのモデルとlargeサイズのモデルの2種類にモデルを大別して結果をまとめました。
-なお、Accuracy (正解率)以外の値、つまりPresicion (精度)、Recall (再現率)、F1はmacro平均を取った値です。
+なお、Accuracy (正解率)以外の値、つまりPrecision (精度)、Recall (再現率)、F1はmacro平均を取った値です。
 また、すべての値は%表記です。
 
 | base models                                                                                                               | Accuracy  | Precision |  Recall   |    F1     |
