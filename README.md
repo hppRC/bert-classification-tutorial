@@ -49,7 +49,7 @@ Transformersの別の良さとしては、事前学習済みモデルのアッ�
 3. データ準備 → 訓練 & 評価 という実験プロセスの実装指針の提供
 4. 一般的な評価値の算出を含む実験テンプレートとして、その他のタスクにも簡単に利用できる汎用的な実装
 
-<!-- 本実装の解説は[こちらの記事]でもしておりますので、ぜひ併せてご覧ください。 -->
+本実装については[自然言語処理 30巻 2号に掲載の学会記事](https://www.jstage.jst.go.jp/article/jnlp/30/2/30_867/_article/-char/ja)でも解説しておりますので、ぜひ併せてご覧ください。
 以降の節では、本実装を俯瞰しつつ、主要な項目について述べます。
 
 ## 実装の全体像
@@ -76,10 +76,9 @@ Transformersの別の良さとしては、事前学習済みモデルのアッ�
 したがって本実装は、ターミナル上でコマンドを実行していれば一連の流れが全て完了するように設計しています。
 具体的には、各プログラムがコマンドライン引数を受け取るようになっており、プログラムの挙動を変更するために、プログラムを変更する必要はないように実装しています。
 
-以降の節で詳しく説明しますが、本実装では以下のコマンドを実行すれば、環境構築・データセット作成・訓練&評価を行えるようになっています。
+以降の節で詳しく説明しますが、本実装では以下のコマンドを実行すれば、環境構築・データセット作成・訓練&評価の全てが行えるようになっています(コマンドを実行するディレクトリはプロジェクトルート、つまり、`src`ディレクトリや`run.sh`ファイルがあるディレクトリを想定しています)。
 
 ```bash
-poetry config virtualenvs.prefer-active-python true
 poetry install
 
 bash src/download.sh
@@ -100,23 +99,23 @@ Python 3.10は、match文の導入やwith文の改善など様々な利便性の
 また、Python 3.10では、Type Hints (型注釈)が以前のバージョンより自然に書けるようになっており、今までよりも堅牢かつ可読性の高いコードを書きやすくなっています。
 そのため、公開実装のためのPythonとしても優れていると考えました。
 
-Pythonの環境を構築する上で、おすすめの方法を2つ紹介するので、どちらか好きな方で環境構築をしてみてください。
+次に、Pythonの環境を構築する上でおすすめの方法を2つ紹介するので、どちらか好きな方で環境構築をしてみてください。
 
-### Install with poetry
+### 1. Install with poetry
 
-1つめの環境構築法は、Pythonのパッケージマネージャである[Poetry](https://python-poetry.org/)を使ったものです。
+1つめの環境構築法は、Pythonパッケージのパッケージマネージャである[Poetry](https://python-poetry.org/)を使ったものです。
 Poetryを用いることで、インストールするPythonパッケージの依存関係やバージョンを比較的精密に管理することができます。
 
 Poetryを利用する場合は別途[pyenv](https://github.com/pyenv/pyenv), [anyenv](https://github.com/anyenv/anyenv), [asdf](https://asdf-vm.com/)(おすすめ)といったPythonのバージョン管理ができるツールを用いて、Python 3.10をインストールしておく必要がある点に注意してください。
+また、Poetryのバージョンとしては`1.5.1`以上が必要になります。
 
 Poetryを利用した環境構築は、以下のようにすれば完了します。
 
 ```bash
-poetry config virtualenvs.prefer-active-python true
 poetry install
 ```
 
-### Install with conda & pip
+### 2. Install with conda & pip
 
 2つめの環境構築法は、[Miniconda](https://docs.conda.io/projects/continuumio-conda/en/latest/user-guide/install/index.html)を使ったものです。
 Minicondaは、科学計算用ライブラリを簡単にインストールできるパッケージマネージャであるAnacondaの縮小版です。
@@ -125,19 +124,21 @@ Minicondaを用いる環境構築では、通常さまざまなパッケージ�
 しかし、`conda`コマンドでインストールできるパッケージはしばしば古く、管理が難しいことがあります。
 
 したがって今回は、Minicondaを用いてPython 3.10の仮想環境を構築し、その仮想環境の中にpip (Pythonのデフォルトのパッケージ管理ツール)でライブラリをインストールします。
-
-ここで、PyTorchは通常通り`conda`コマンドでインストールします。
+ただ、PyTorchは通常通り`conda`コマンドでインストールします。
 これは、PyTorchのインストールには非常に多くの複雑怪奇な依存関係が存在する(例えば、システムのGCCのバージョンなど)ため、これらに関連して発生する問題をできるだけ避けるためです。
+そのため、順番としては、`conda`でPyTorchをインストールしたあとに、`pip`のみを用いて必要なパッケージをインストールしていく、という流れになります。
 
 環境構築は以下のようにコマンドを実行すれば完了すると思います。
+なお、`pytorch-cuda=11.8`のように記載している部分は、GPUを利用した計算を行うためのソフトウェアであるCUDAのバージョンを記載する必要があります。
+お使いの実行環境に適したCUDAのバージョンを指定してください。
 
 ```bash
 conda create -n bert-classification-tutorial python=3.10
+conda activate bert-classification-tutorial
 
 // see: https://pytorch.org/get-started/locally/
-conda install pytorch pytorch-cuda=11.6 -c pytorch -c nvidia
-
-pip install tqdm "transformers[ja,sentencepiece]" classopt tokenizers numpy pandas more-itertools scikit-learn scipy
+conda install pytorch pytorch-cuda=11.8 -c pytorch -c nvidia
+pip install tqdm "transformers[ja,sentencepiece]" typed-argument-parser tokenizers numpy pandas more-itertools scikit-learn scipy
 ```
 
 ### 補足
@@ -290,7 +291,6 @@ outputs/bert-base-multilingual-cased
 }
 ```
 
-
 ### その他
 
 `src/utils.py`に、`list[dict]`なデータをJSONL形式で保存・読み込む関数や、`list[dict]`の平均を取る関数、乱数シード値の設定を行う関数など、さまざまな便利関数を定義してあります。
@@ -298,6 +298,12 @@ outputs/bert-base-multilingual-cased
 
 また、`src/aggregate.py`を実行することで、`outputs`ディレクトリ以下の結果を単一のcsvファイルにまとめることができます。このスクリプトは適宜改造してお使いください。
 
+
+### Windows上での実行に際する注意
+
+Windows上で本プロジェクトを実行する際は、マルチプロセス処理に関する問題から、`src/train.py`中の`DataLoader`クラスに与える`num_workers`引数を`0`にする必要があります([参考](https://github.com/woven-planet/l5kit/issues/130#issuecomment-687817549))。
+したがって、OSとしてWindowsをお使いの方は、`src/train.py`中の`num_workers=4`という記述を`num_workers=0`に書き換えてください。
+この場合、多少モデルの訓練時間が伸びることが想定されますが、訓練されたモデルの性能や学習過程に影響はないと思われます。
 
 ## 評価実験
 

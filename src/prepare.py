@@ -2,15 +2,14 @@ import random
 import unicodedata
 from pathlib import Path
 
-from classopt import classopt
 from more_itertools import divide, flatten
+from tap import Tap
 from tqdm import tqdm
 
 import src.utils as utils
 
 
-@classopt(default_long=True)
-class Args:
+class Args(Tap):
     input_dir: Path = "./data/text"
     output_dir: Path = "./datasets/livedoor"
     seed: int = 42
@@ -84,5 +83,5 @@ def main(args: Args):
 
 
 if __name__ == "__main__":
-    args = Args.from_args()
+    args = Args().parse_args()
     main(args)

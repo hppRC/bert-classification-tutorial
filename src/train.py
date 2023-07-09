@@ -2,8 +2,8 @@ from datetime import datetime
 from pathlib import Path
 
 import torch
-from classopt import classopt
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support
+from tap import Tap
 from torch.utils.data import DataLoader
 from tqdm import tqdm, trange
 from transformers import (
@@ -18,9 +18,8 @@ from transformers.tokenization_utils import BatchEncoding, PreTrainedTokenizer
 import src.utils as utils
 
 
-@classopt(default_long=True)
-class Args:
-    model_name: str = "cl-tohoku/bert-base-japanese-v2"
+class Args(Tap):
+    model_name: str = "cl-tohoku/bert-base-japanese-v3"
     dataset_dir: Path = "./datasets/livedoor"
 
     batch_size: int = 16
@@ -28,49 +27,66 @@ class Args:
     lr: float = 2e-5
     num_warmup_epochs: int = 2
     max_seq_len: int = 512
+    weight_decay: float = 0.01
 
-    date = datetime.now().strftime("%Y-%m-%d/%H-%M-%S")
     device: str = "cuda:0"
     seed: int = 42
 
-    def __post_init__(self):
-        utils.set_seed(self.seed)
-
+    def process_args(self):
         self.label2id: dict[str, int] = utils.load_json(self.dataset_dir / "label2id.json")
         self.labels: list[int] = list(self.label2id.values())
 
-        model_name = self.model_name.replace("/", "__")
-        self.output_dir = Path("outputs") / model_name / self.date
-        self.output_dir.mkdir(parents=True, exist_ok=True)
+        date, time = datetime.now().strftime("%Y-%m-%d/%H-%M-%S").split("/")
+
+        self.output_dir = self.make_output_dir(
+            "outputs",
+            self.model_name,
+            date,
+            time,
+        )
+
+    def make_output_dir(self, *args) -> Path:
+        args = [str(a).replace("/", "__") for a in args]
+        output_dir = Path(*args)
+        output_dir.mkdir(parents=True, exist_ok=True)
+        return output_dir
 
 
 def load_dataset(path: Path) -> list[dict]:
     return utils.load_jsonl(path).to_dict(orient="records")
 
 
-def main(args: Args):
-    tokenizer: PreTrainedTokenizer = AutoTokenizer.from_pretrained(
-        args.model_name,
-        model_max_length=args.max_seq_len,
-    )
-    model: PreTrainedModel = (
-        AutoModelForSequenceClassification.from_pretrained(
+class Experiment:
+    def __init__(self, args: Args):
+        self.args: Args = args
+
+        self.tokenizer: PreTrainedTokenizer = AutoTokenizer.from_pretrained(
+            args.model_name,
+            model_max_length=args.max_seq_len,
+        )
+
+        self.model: PreTrainedModel = AutoModelForSequenceClassification.from_pretrained(
             args.model_name,
             num_labels=len(args.labels),
-        )
-        .eval()
-        .to(args.device, non_blocking=True)
-    )
+        ).to(args.device, non_blocking=True)
+        self.model = torch.compile(self.model)
+        self.model.eval()
 
-    train_dataset: list[dict] = load_dataset(args.dataset_dir / "train.jsonl")
-    val_dataset: list[dict] = load_dataset(args.dataset_dir / "val.jsonl")
-    test_dataset: list[dict] = load_dataset(args.dataset_dir / "test.jsonl")
+        self.train_dataset: list[dict] = load_dataset(args.dataset_dir / "train.jsonl")
+        self.val_dataset: list[dict] = load_dataset(args.dataset_dir / "val.jsonl")
+        self.test_dataset: list[dict] = load_dataset(args.dataset_dir / "test.jsonl")
 
-    def collate_fn(data_list: list[dict]) -> BatchEncoding:
+        self.train_dataloader: DataLoader = self.create_loader(self.train_dataset, shuffle=True)
+        self.val_dataloader: DataLoader = self.create_loader(self.val_dataset, shuffle=False)
+        self.test_dataloader: DataLoader = self.create_loader(self.test_dataset, shuffle=False)
+
+        self.optimizer, self.lr_scheduler = self.create_optimizer()
+
+    def collate_fn(self, data_list: list[dict]) -> BatchEncoding:
         title = [d["title"] for d in data_list]
         body = [d["body"] for d in data_list]
 
-        inputs: BatchEncoding = tokenizer(
+        inputs: BatchEncoding = self.tokenizer(
             title,
             body,
             padding=True,
@@ -82,44 +98,110 @@ def main(args: Args):
         labels = torch.LongTensor([d["label"] for d in data_list])
         return BatchEncoding({**inputs, "labels": labels})
 
-    def create_loader(dataset, batch_size=None, shuffle=False):
+    def create_loader(
+        self,
+        dataset,
+        batch_size=None,
+        shuffle=False,
+    ):
         return DataLoader(
             dataset,
-            collate_fn=collate_fn,
+            collate_fn=self.collate_fn,
             batch_size=batch_size or args.batch_size,
             shuffle=shuffle,
             num_workers=4,
             pin_memory=True,
         )
 
-    train_dataloader: DataLoader = create_loader(train_dataset, shuffle=True)
-    val_dataloader: DataLoader = create_loader(val_dataset, shuffle=False)
-    test_dataloader: DataLoader = create_loader(test_dataset, shuffle=False)
+    def create_optimizer(self) -> tuple[torch.optim.Optimizer, torch.optim.lr_scheduler.LambdaLR]:
+        no_decay = {"bias", "LayerNorm.weight"}
+        optimizer_grouped_parameters = [
+            {
+                "params": [
+                    param for name, param in self.model.named_parameters() if not name in no_decay
+                ],
+                "weight_decay": self.args.weight_decay,
+            },
+            {
+                "params": [
+                    param for name, param in self.model.named_parameters() if name in no_decay
+                ],
+                "weight_decay": 0.0,
+            },
+        ]
 
-    optimizer = torch.optim.AdamW(params=model.parameters(), lr=args.lr)
+        optimizer = torch.optim.AdamW(optimizer_grouped_parameters, lr=self.args.lr)
 
-    lr_scheduler = get_linear_schedule_with_warmup(
-        optimizer=optimizer,
-        num_warmup_steps=len(train_dataloader) * args.num_warmup_epochs,
-        num_training_steps=len(train_dataloader) * args.epochs,
-    )
+        lr_scheduler = get_linear_schedule_with_warmup(
+            optimizer=optimizer,
+            num_warmup_steps=len(self.train_dataloader) * args.num_warmup_epochs,
+            num_training_steps=len(self.train_dataloader) * args.epochs,
+        )
 
-    def clone_state_dict() -> dict:
-        return {k: v.detach().clone().cpu() for k, v in model.state_dict().items()}
+        return optimizer, lr_scheduler
 
-    @torch.inference_mode()
-    def evaluate(dataloader: DataLoader) -> dict[str, float]:
-        model.eval()
-        loss = 0
-        gold_labels, pred_labels = [], []
+    @torch.cuda.amp.autocast(dtype=torch.bfloat16 if torch.cuda.is_bf16_supported() else None)
+    def run(self):
+        val_metrics = {"epoch": None, **self.evaluate(self.val_dataloader)}
+        best_epoch, best_val_f1 = None, val_metrics["f1"]
+        best_state_dict = self.clone_state_dict()
+        self.log(val_metrics)
+
+        scaler = torch.cuda.amp.GradScaler()
+
+        for epoch in trange(args.epochs, dynamic_ncols=True):
+            self.model.train()
+
+            for batch in tqdm(
+                self.train_dataloader,
+                total=len(self.train_dataloader),
+                dynamic_ncols=True,
+                leave=False,
+            ):
+                out: SequenceClassifierOutput = self.model(**batch.to(args.device))
+                loss: torch.FloatTensor = out.loss
+
+                self.optimizer.zero_grad()
+                scaler.scale(loss).backward()
+                scaler.step(self.optimizer)
+
+                scale = scaler.get_scale()
+                scaler.update()
+                if scale <= scaler.get_scale():
+                    self.lr_scheduler.step()
+
+            self.model.eval()
+            val_metrics = {"epoch": epoch, **self.evaluate(self.val_dataloader)}
+            self.log(val_metrics)
+
+            if val_metrics["f1"] > best_val_f1:
+                best_val_f1 = val_metrics["f1"]
+                best_epoch = epoch
+                best_state_dict = self.clone_state_dict()
+
+        self.model.load_state_dict(best_state_dict)
+        self.model.eval().to(args.device, non_blocking=True)
+
+        val_metrics = {"best-epoch": best_epoch, **self.evaluate(self.val_dataloader)}
+        test_metrics = self.evaluate(self.test_dataloader)
+
+        return val_metrics, test_metrics
+
+    @torch.no_grad()
+    @torch.cuda.amp.autocast(dtype=torch.bfloat16 if torch.cuda.is_bf16_supported() else None)
+    def evaluate(self, dataloader: DataLoader) -> dict[str, float]:
+        self.model.eval()
+        total_loss, gold_labels, pred_labels = 0, [], []
 
         for batch in tqdm(dataloader, total=len(dataloader), dynamic_ncols=True, leave=False):
-            out: SequenceClassifierOutput = model(**batch.to(args.device))
-            batch_size: int = batch.input_ids.size(0)
-            loss += out.loss.item() * batch_size
+            out: SequenceClassifierOutput = self.model(**batch.to(self.args.device))
 
-            gold_labels += batch.labels.tolist()
+            batch_size: int = batch.input_ids.size(0)
+            loss = out.loss.item() * batch_size
+
             pred_labels += out.logits.argmax(dim=-1).tolist()
+            gold_labels += batch.labels.tolist()
+            total_loss += loss
 
         accuracy: float = accuracy_score(gold_labels, pred_labels)
         precision, recall, f1, _ = precision_recall_fscore_support(
@@ -138,8 +220,8 @@ def main(args: Args):
             "f1": f1,
         }
 
-    def log(metrics: dict) -> None:
-        utils.log(metrics, args.output_dir / "log.csv")
+    def log(self, metrics: dict) -> None:
+        utils.log(metrics, self.args.output_dir / "log.csv")
         tqdm.write(
             f"epoch: {metrics['epoch']} \t"
             f"loss: {metrics['loss']:2.6f}   \t"
@@ -149,48 +231,20 @@ def main(args: Args):
             f"f1: {metrics['f1']:.4f}"
         )
 
-    val_metrics = {"epoch": None, **evaluate(val_dataloader)}
-    best_epoch, best_val_f1 = None, val_metrics["f1"]
-    best_state_dict = clone_state_dict()
-    log(val_metrics)
+    def clone_state_dict(self) -> dict:
+        return {k: v.detach().clone().cpu() for k, v in self.model.state_dict().items()}
 
-    for epoch in trange(args.epochs, dynamic_ncols=True):
-        model.train()
 
-        for batch in tqdm(
-            train_dataloader,
-            total=len(train_dataloader),
-            dynamic_ncols=True,
-            leave=False,
-        ):
-            out: SequenceClassifierOutput = model(**batch.to(args.device))
-            loss: torch.FloatTensor = out.loss
+def main(args: Args):
+    exp = Experiment(args=args)
+    val_metrics, test_metrics = exp.run()
 
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
-            lr_scheduler.step()
-
-        model.eval()
-        val_metrics = {"epoch": epoch, **evaluate(val_dataloader)}
-        log(val_metrics)
-
-        if val_metrics["f1"] > best_val_f1:
-            best_val_f1 = val_metrics["f1"]
-            best_epoch = epoch
-            best_state_dict = clone_state_dict()
-
-    model.load_state_dict(best_state_dict)
-    model.eval().to(args.device, non_blocking=True)
-
-    val_metrics = {"best-epoch": best_epoch, **evaluate(val_dataloader)}
     utils.save_json(val_metrics, args.output_dir / "val-metrics.json")
-
-    test_metrics = evaluate(test_dataloader)
     utils.save_json(test_metrics, args.output_dir / "test-metrics.json")
     utils.save_config(args, args.output_dir / "config.json")
 
 
 if __name__ == "__main__":
-    args = Args.from_args()
+    args = Args().parse_args()
+    utils.init(seed=args.seed)
     main(args)

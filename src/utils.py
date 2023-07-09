@@ -1,6 +1,7 @@
 import json
 import random
 from collections.abc import Iterable
+from inspect import ismethod
 from pathlib import Path
 from typing import Any
 
@@ -55,17 +56,23 @@ def log(data: dict, path: Path | str) -> None:
         pd.DataFrame([data]).to_csv(path, index=False)
 
 
-def save_config(data: dict, path: Path | str) -> None:
+def save_config(data, path: Path | str) -> None:
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
 
     try:
-        data: dict = data.to_dict()
+        data: dict = data.as_dict()
     except:
-        pass
+        try:
+            data: dict = data.to_dict()
+        except:
+            pass
 
     if type(data) != dict:
         data: dict = vars(data)
+
+    data = {k: v for k, v in data.items() if not ismethod(v)}
+    data = {k: v if type(v) in [int, float, bool, None] else str(v) for k, v in data.items()}
 
     save_json(data, path)
 
@@ -106,3 +113,17 @@ def dict_average(dicts: Iterable[dict]) -> dict:
                 averaged[k].append(v)
 
     return averaged
+
+
+def init(
+    seed: int,
+    float32_matmul_precision: str = "high",
+):
+    # import torch._dynamo.config as dynamo_config
+    import torch._inductor.config as inductor_config
+
+    inductor_config.fallback_random = True
+    # inductor_config.trace.debug_log = False
+
+    set_seed(seed)
+    torch.set_float32_matmul_precision(float32_matmul_precision)
