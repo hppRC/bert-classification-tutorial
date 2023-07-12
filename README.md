@@ -319,22 +319,22 @@ Windows上で本プロジェクトを実行する際は、マルチプロセス�
 では、結果を以下の表に示します。
 実験したモデル数が多いので、まずは 200M (2億) パラメータ以下の比較的小規模なモデルの結果についてみてみます。
 
-| Models (< 200 M)                                                                                                          | Params |  LR   | Accuracy | Precision | Recall |    F1     |
-| ------------------------------------------------------------------------------------------------------------------------- | -----: | :---: | :------: | :-------: | :----: | :-------: |
-| [studio-ousia/luke-japanese-base-lite](https://huggingface.co/studio-ousia/luke-japanese-base-lite)                       |  133 M | 5e-05 |  97.01   |   96.72   | 96.29  | **96.46** |
-| [cl-tohoku/bert-base-japanese-v2](https://huggingface.co/cl-tohoku/bert-base-japanese-v2)                                 |  111 M | 5e-05 |  96.88   |   96.42   | 96.46  |   96.43   |
-| [cl-tohoku/bert-base-japanese-v3](https://huggingface.co/cl-tohoku/bert-base-japanese-v3)                                 |  111 M | 5e-05 |  96.88   |   96.59   | 96.28  |   96.39   |
-|                                                                                                                           |        |       |          |           |        |
-| [cl-tohoku/bert-base-japanese](https://huggingface.co/cl-tohoku/bert-base-japanese)                                       |  110 M | 3e-05 |  96.74   |   96.20   | 96.16  |   96.16   |
-| [bert-base-multilingual-cased](https://huggingface.co/bert-base-multilingual-cased)                                       |  177 M | 5e-05 |  96.60   |   96.25   | 96.06  |   96.12   |
-|                                                                                                                           |        |       |          |           |        |
-| [cl-tohoku/bert-base-japanese-char-v3](https://huggingface.co/cl-tohoku/bert-base-japanese-char-v3)                       |   91 M | 5e-05 |  96.33   |   95.69   | 95.75  |   95.70   |
-| [cl-tohoku/bert-base-japanese-char-v2](https://huggingface.co/cl-tohoku/bert-base-japanese-char-v2)                       |   90 M | 3e-05 |  96.06   |   95.62   | 95.26  |   95.39   |
-|                                                                                                                           |        |       |          |           |        |
-| [cl-tohoku/bert-base-japanese-whole-word-masking](https://huggingface.co/cl-tohoku/bert-base-japanese-whole-word-masking) |  110 M | 1e-05 |  95.79   |   95.24   | 95.25  |   95.21   |
-| [cl-tohoku/bert-base-japanese-char](https://huggingface.co/cl-tohoku/bert-base-japanese-char)                             |   89 M | 1e-05 |  95.11   |   94.91   | 93.82  |   94.17   |
+| Models (< 200 M)                                                                                                          | Params | Accuracy | Precision | Recall |    F1     |
+| ------------------------------------------------------------------------------------------------------------------------- | -----: | :------: | :-------: | :----: | :-------: |
+| [studio-ousia/luke-japanese-base-lite](https://huggingface.co/studio-ousia/luke-japanese-base-lite)                       |  133 M |  97.01   |   96.72   | 96.29  | **96.46** |
+| [cl-tohoku/bert-base-japanese-v2](https://huggingface.co/cl-tohoku/bert-base-japanese-v2)                                 |  111 M |  96.88   |   96.42   | 96.46  |   96.43   |
+| [cl-tohoku/bert-base-japanese-v3](https://huggingface.co/cl-tohoku/bert-base-japanese-v3)                                 |  111 M |  96.88   |   96.59   | 96.28  |   96.39   |
+|                                                                                                                           |        |          |           |        |
+| [cl-tohoku/bert-base-japanese](https://huggingface.co/cl-tohoku/bert-base-japanese)                                       |  110 M |  96.74   |   96.20   | 96.16  |   96.16   |
+| [bert-base-multilingual-cased](https://huggingface.co/bert-base-multilingual-cased)                                       |  177 M |  96.60   |   96.25   | 96.06  |   96.12   |
+|                                                                                                                           |        |          |           |        |
+| [cl-tohoku/bert-base-japanese-char-v3](https://huggingface.co/cl-tohoku/bert-base-japanese-char-v3)                       |   91 M |  96.33   |   95.69   | 95.75  |   95.70   |
+| [cl-tohoku/bert-base-japanese-char-v2](https://huggingface.co/cl-tohoku/bert-base-japanese-char-v2)                       |   90 M |  96.06   |   95.62   | 95.26  |   95.39   |
+|                                                                                                                           |        |          |           |        |
+| [cl-tohoku/bert-base-japanese-whole-word-masking](https://huggingface.co/cl-tohoku/bert-base-japanese-whole-word-masking) |  110 M |  95.79   |   95.24   | 95.25  |   95.21   |
+| [cl-tohoku/bert-base-japanese-char](https://huggingface.co/cl-tohoku/bert-base-japanese-char)                             |   89 M |  95.11   |   94.91   | 93.82  |   94.17   |
 
-表中のParamsはそれぞれのモデルのパラメータ数を、LRはモデルごとに開発セットで最良だった学習率(Learning Rate)を示します。
+表中のParamsはそれぞれのモデルのパラメータ数を示します。
 なお、Accuracy (正解率)以外の値、つまりPrecision (精度)、Recall (再現率)、F1はmacro平均を取った値であり、これらの評価指標の値は%表記されています。
 モデルとその評価結果は、F値が高い順に上から並んでいます。
 この表の結果は`src/aggregate.py`を実行することで得られます(パラメータ数は手元でPyTorchを使って計算し直しているので、公式発表と違う値になっているかもしれません)。
@@ -352,18 +352,18 @@ Windows上で本プロジェクトを実行する際は、マルチプロセス�
 
 次に、200 Mパラメータ以上のより大きなモデルの結果についてみてみます。
 
-| Models (>= 200 M)                                                                                     | Params |  LR   | Accuracy | Precision | Recall |    F1     |
-| ----------------------------------------------------------------------------------------------------- | -----: | :---: | :------: | :-------: | :----: | :-------: |
-| [studio-ousia/luke-japanese-large-lite](https://huggingface.co/studio-ousia/luke-japanese-large-lite) |  413 M | 3e-05 |  97.83   |   97.82   | 97.22  | **97.47** |
-| [cl-tohoku/bert-large-japanese](https://huggingface.co/cl-tohoku/bert-large-japanese)                 |  337 M | 5e-05 |  97.55   |   97.13   | 97.10  |   97.10   |
-| [xlm-roberta-large](https://huggingface.co/xlm-roberta-large)                                         |  559 M | 1e-05 |  97.15   |   97.36   | 96.49  |   96.83   |
-| [studio-ousia/mluke-large-lite](https://huggingface.co/studio-ousia/mluke-large-lite)                 |  560 M | 5e-05 |  97.28   |   97.25   | 96.56  |   96.83   |
-|                                                                                                       |        |       |          |           |        |
-| [xlm-roberta-base](https://huggingface.co/xlm-roberta-base)                                           |  278 M | 3e-05 |  97.15   |   96.71   | 96.58  |   96.63   |
-| [studio-ousia/mluke-base-lite](https://huggingface.co/studio-ousia/mluke-base-lite)                   |  278 M | 3e-05 |  97.01   |   96.61   | 96.63  |   96.60   |
-|                                                                                                       |        |       |          |           |        |
-| [cl-tohoku/bert-large-japanese-v2](https://huggingface.co/cl-tohoku/bert-large-japanese-v2)           |  337 M | 1e-05 |  96.74   |   96.57   | 96.10  |   96.26   |
-| [cl-tohoku/bert-large-japanese-char-v2](https://huggingface.co/cl-tohoku/bert-large-japanese-char-v2) |  311 M | 5e-05 |  95.92   |   95.73   | 95.17  |   95.38   |
+| Models (>= 200 M)                                                                                     | Params | Accuracy | Precision | Recall |    F1     |
+| ----------------------------------------------------------------------------------------------------- | -----: | :------: | :-------: | :----: | :-------: |
+| [studio-ousia/luke-japanese-large-lite](https://huggingface.co/studio-ousia/luke-japanese-large-lite) |  413 M |  97.83   |   97.82   | 97.22  | **97.47** |
+| [cl-tohoku/bert-large-japanese](https://huggingface.co/cl-tohoku/bert-large-japanese)                 |  337 M |  97.55   |   97.13   | 97.10  |   97.10   |
+| [xlm-roberta-large](https://huggingface.co/xlm-roberta-large)                                         |  559 M |  97.15   |   97.36   | 96.49  |   96.83   |
+| [studio-ousia/mluke-large-lite](https://huggingface.co/studio-ousia/mluke-large-lite)                 |  560 M |  97.28   |   97.25   | 96.56  |   96.83   |
+|                                                                                                       |        |          |           |        |
+| [xlm-roberta-base](https://huggingface.co/xlm-roberta-base)                                           |  278 M |  97.15   |   96.71   | 96.58  |   96.63   |
+| [studio-ousia/mluke-base-lite](https://huggingface.co/studio-ousia/mluke-base-lite)                   |  278 M |  97.01   |   96.61   | 96.63  |   96.60   |
+|                                                                                                       |        |          |           |        |
+| [cl-tohoku/bert-large-japanese-v2](https://huggingface.co/cl-tohoku/bert-large-japanese-v2)           |  337 M |  96.74   |   96.57   | 96.10  |   96.26   |
+| [cl-tohoku/bert-large-japanese-char-v2](https://huggingface.co/cl-tohoku/bert-large-japanese-char-v2) |  311 M |  95.92   |   95.73   | 95.17  |   95.38   |
 
 
 結果から、こちらでもやはりStudio Ousiaの日本語LUKE-largeが最も高い性能を達成していることがわかります。
