@@ -24,7 +24,7 @@ class Args(Tap):
 
     batch_size: int = 16
     epochs: int = 20
-    lr: float = 2e-5
+    lr: float = 3e-5
     num_warmup_epochs: int = 2
     max_seq_len: int = 512
     weight_decay: float = 0.01
