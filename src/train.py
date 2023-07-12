@@ -28,6 +28,7 @@ class Args(Tap):
     num_warmup_epochs: int = 2
     max_seq_len: int = 512
     weight_decay: float = 0.01
+    gradient_checkpointing: bool = False
 
     device: str = "cuda:0"
     seed: int = 42
@@ -36,8 +37,7 @@ class Args(Tap):
         self.label2id: dict[str, int] = utils.load_json(self.dataset_dir / "label2id.json")
         self.labels: list[int] = list(self.label2id.values())
 
-        date, time = datetime.now().strftime("%Y-%m-%d/%H-%M-%S").split("/")
-
+        date, time = datetime.now().strftime("%Y-%m-%d/%H-%M-%S.%f").split("/")
         self.output_dir = self.make_output_dir(
             "outputs",
             self.model_name,
@@ -52,10 +52,6 @@ class Args(Tap):
         return output_dir
 
 
-def load_dataset(path: Path) -> list[dict]:
-    return utils.load_jsonl(path).to_dict(orient="records")
-
-
 class Experiment:
     def __init__(self, args: Args):
         self.args: Args = args
@@ -65,22 +61,35 @@ class Experiment:
             model_max_length=args.max_seq_len,
         )
 
-        self.model: PreTrainedModel = AutoModelForSequenceClassification.from_pretrained(
-            args.model_name,
-            num_labels=len(args.labels),
-        ).to(args.device, non_blocking=True)
-        self.model = torch.compile(self.model)
-        self.model.eval()
+        self.model: PreTrainedModel = (
+            AutoModelForSequenceClassification.from_pretrained(
+                args.model_name,
+                num_labels=len(args.labels),
+            )
+            .eval()
+            .to(args.device, non_blocking=True)
+        )
 
-        self.train_dataset: list[dict] = load_dataset(args.dataset_dir / "train.jsonl")
-        self.val_dataset: list[dict] = load_dataset(args.dataset_dir / "val.jsonl")
-        self.test_dataset: list[dict] = load_dataset(args.dataset_dir / "test.jsonl")
+        # gradient_checkpointingとtorch.compileは相性が悪いことが多いので排他的に使用
+        if args.gradient_checkpointing:
+            self.model.gradient_checkpointing_enable()
+        else:
+            self.model = torch.compile(self.model)
 
-        self.train_dataloader: DataLoader = self.create_loader(self.train_dataset, shuffle=True)
-        self.val_dataloader: DataLoader = self.create_loader(self.val_dataset, shuffle=False)
-        self.test_dataloader: DataLoader = self.create_loader(self.test_dataset, shuffle=False)
+        self.train_dataloader: DataLoader = self.load_dataset(split="train", shuffle=True)
+        self.val_dataloader: DataLoader = self.load_dataset(split="val")
+        self.test_dataloader: DataLoader = self.load_dataset(split="test")
 
         self.optimizer, self.lr_scheduler = self.create_optimizer()
+
+    def load_dataset(
+        self,
+        split: str,
+        shuffle: bool = False,
+    ) -> DataLoader:
+        path: Path = self.args.dataset_dir / f"{split}.jsonl"
+        dataset: list[dict] = utils.load_jsonl(path).to_dict(orient="records")
+        return self.create_loader(dataset, shuffle=shuffle)
 
     def collate_fn(self, data_list: list[dict]) -> BatchEncoding:
         title = [d["title"] for d in data_list]
@@ -114,6 +123,7 @@ class Experiment:
         )
 
     def create_optimizer(self) -> tuple[torch.optim.Optimizer, torch.optim.lr_scheduler.LambdaLR]:
+        # see: https://tma15.github.io/blog/2021/09/17/deep-learningbert%E5%AD%A6%E7%BF%92%E6%99%82%E3%81%ABbias%E3%82%84layer-normalization%E3%82%92weight-decay%E3%81%97%E3%81%AA%E3%81%84%E7%90%86%E7%94%B1/
         no_decay = {"bias", "LayerNorm.weight"}
         optimizer_grouped_parameters = [
             {
@@ -174,6 +184,7 @@ class Experiment:
             val_metrics = {"epoch": epoch, **self.evaluate(self.val_dataloader)}
             self.log(val_metrics)
 
+            # 開発セットでのF値最良時のモデルを保存
             if val_metrics["f1"] > best_val_f1:
                 best_val_f1 = val_metrics["f1"]
                 best_epoch = epoch
@@ -198,10 +209,10 @@ class Experiment:
 
             batch_size: int = batch.input_ids.size(0)
             loss = out.loss.item() * batch_size
+            total_loss += loss
 
             pred_labels += out.logits.argmax(dim=-1).tolist()
             gold_labels += batch.labels.tolist()
-            total_loss += loss
 
         accuracy: float = accuracy_score(gold_labels, pred_labels)
         precision, recall, f1, _ = precision_recall_fscore_support(
@@ -213,7 +224,7 @@ class Experiment:
         )
 
         return {
-            "loss": loss / len(dataloader),
+            "loss": loss / len(dataloader.dataset),
             "accuracy": accuracy,
             "precision": precision,
             "recall": recall,

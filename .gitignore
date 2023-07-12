@@ -1,7 +1,9 @@
 !.envrc
+/prev
 /data
 /datasets
 /outputs
+/scripts
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

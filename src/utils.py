@@ -119,11 +119,9 @@ def init(
     seed: int,
     float32_matmul_precision: str = "high",
 ):
-    # import torch._dynamo.config as dynamo_config
     import torch._inductor.config as inductor_config
 
     inductor_config.fallback_random = True
-    # inductor_config.trace.debug_log = False
 
     set_seed(seed)
     torch.set_float32_matmul_precision(float32_matmul_precision)
