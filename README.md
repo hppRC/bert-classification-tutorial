@@ -241,7 +241,7 @@ poetry run python src/train.py --model_name cl-tohoku/bert-base-japanese-v2
 
 この時、`--model_name`に与える引数を例えば`bert-base-multilingual-cased`にすることで、多言語BERTを用いた学習が実行できます。
 
-また、ほとんどの設定をコマンドライン引数として与えら得れるようにしているので、以下のように複数の設定を変更して実行することも可能です。
+また、ほとんどの設定をコマンドライン引数として与えられるようにしているので、以下のように複数の設定を変更して実行することも可能です。
 
 ```bash
 poetry run python src/train.py \
